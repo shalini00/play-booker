@@ -167,7 +167,8 @@ public class UserController {
     }
 
     public ResponseEntity<Map<String, Object>> handleRefreshToken(String email, HttpServletResponse response) {
-        String accessToken = jwtUtil.generateToken(new HashMap<>(), email);
+        User user = userRepository.findByEmail(email);
+        String accessToken = jwtUtil.generateToken(Map.of("roles", user.getRoles().stream().map(Roles::getName).toList()), email);
         List<RefreshToken> existingRefreshTokenList = refreshTokenRepository.findByEmail(email);
         if (!existingRefreshTokenList.isEmpty()) {
             refreshTokenRepository.deleteAllByEmail(email);

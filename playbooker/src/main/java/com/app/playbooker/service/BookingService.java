@@ -3,7 +3,7 @@ package com.app.playbooker.service;
 import com.app.playbooker.dto.BookingDTO;
 import com.app.playbooker.dto.BookingResponse;
 import com.app.playbooker.dto.PaymentResponseDTO;
-import com.app.playbooker.entity.AvailabilitySlot;
+import com.app.playbooker.dto.SlotInfoDTO;
 import com.app.playbooker.entity.Booking;
 import com.app.playbooker.entity.PlaySpace;
 import com.app.playbooker.entity.User;
@@ -14,30 +14,43 @@ import com.app.playbooker.repository.BookingRepository;
 import com.app.playbooker.repository.PlaySpaceRepository;
 import com.app.playbooker.repository.UserRepository;
 import com.app.playbooker.utils.JwtUtil;
-import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Log4j2
 public class BookingService {
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PlaySpaceRepository playSpaceRepository;
-
-    @Autowired
     private BookingRepository bookingRepository;
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private PlaySpaceService playSpaceService;
+
+    @Autowired
+    private AvailabilityService availabilityService;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -58,9 +71,9 @@ public class BookingService {
             }
 
             String playSpaceId = bookingDTO.getPlaySpaceId();
-            String email = getEmailFromToken();
-            User user = userRepository.findByEmail(email);
-            PlaySpace playSpace = playSpaceRepository.findById(playSpaceId).get();
+            String email = jwtUtil.getEmailFromToken(httpServletRequest);
+            User user = userService.getUserByEmail(email);
+            PlaySpace playSpace = playSpaceService.getPlaySpaceObjectById(playSpaceId);
 
             boolean isAvailable = isSlotAvailable(playSpace, bookingDTO);
 
@@ -91,9 +104,7 @@ public class BookingService {
                 booking.setBookingStatus(BookingStatus.FAILED);
                 booking.setBookingFailedReason("Booking failed due to payment failure.");
             }
-            booking.setCreatedAt(LocalDateTime.now());
             bookingRepository.save(booking);
-            updateAvailabilitySlot(playSpace, bookingDTO);
 
             return getBookingResponse(booking, email);
 
@@ -109,50 +120,57 @@ public class BookingService {
         booking.setPaymentStatus(PaymentStatus.SUCCESS);
         booking.setBookingStatus(BookingStatus.CONFIRMED);
         bookingRepository.save(booking);
-        User user = userRepository.findById(booking.getUserId()).get();
+        User user = userService.getUserById(booking.getUserId());
 
         return getBookingResponse(booking, user.getEmail());
     }
 
-    private void updateAvailabilitySlot(PlaySpace playSpace, BookingDTO bookingDTO) {
-        List<AvailabilitySlot> allSlots = playSpace.getAvailabilitySlots();
-        Optional<AvailabilitySlot> slotOptional = getAvailabilitySlotByStartAndEndTime(allSlots, bookingDTO.getStartTime(), bookingDTO.getEndTime());
-        if(slotOptional.isPresent()) {
-            AvailabilitySlot slot = slotOptional.get();
-            allSlots.remove(slot);
-            slot.setBooked(true);
-            allSlots.add(slot);
-            playSpace.setAvailabilitySlots(allSlots);
-            playSpaceRepository.save(playSpace);
-        }
-    }
-
     private boolean isSlotAvailable(PlaySpace playSpace, BookingDTO bookingDTO) {
-        List<AvailabilitySlot> availabilitySlots = playSpace.getAvailabilitySlots();
-        LocalDateTime start = bookingDTO.getStartTime();
-        LocalDateTime end = bookingDTO.getEndTime();
-        Optional<AvailabilitySlot> slot = getAvailabilitySlotByStartAndEndTime(availabilitySlots, start, end);
+        LocalDateTime startTime = bookingDTO.getStartTime();
+        LocalDateTime endTime = bookingDTO.getEndTime();
+        LocalDate bookingDate = bookingDTO.getBookingDate();
+        String playSpaceId = playSpace.getId();
 
-        return slot.isPresent() && !slot.get().isBooked();
+        // Get availability info for the given date
+        List<SlotInfoDTO> availability = availabilityService.getSlotInfo(playSpaceId, bookingDate);
+
+        // Calculate total number of 30-minute slots needed
+        long minutes = Duration.between(startTime, endTime).toMinutes();
+        int slotCount = (int) (minutes / 30);
+
+        // Start checking availability for each half-hour slot
+        LocalDateTime temp = startTime;
+
+        for (int i = 0; i < slotCount; i++) {
+            LocalTime slotTime = temp.toLocalTime();
+
+            // Find matching slot from availability list
+            boolean foundAvailable = availability.stream()
+                    .anyMatch(slot -> slot.getTime().equals(slotTime) && slot.isAvailable());
+
+            if (!foundAvailable) {
+                return false; // If any required slot is unavailable, return false
+            }
+
+            temp = temp.plusMinutes(30);
+        }
+
+        return true; // All slots are available
     }
 
-    public Optional<AvailabilitySlot> getAvailabilitySlotByStartAndEndTime(List<AvailabilitySlot> availabilitySlots, LocalDateTime start, LocalDateTime end) {
-        return availabilitySlots.stream()
-                .filter(availabilitySlot -> availabilitySlot.getStartTime().equals(start) && availabilitySlot.getEndTime().equals(end))
-                .findFirst();
-    }
+    public Page<BookingResponse> getAllBookingByUserId(String userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
-    private String getEmailFromToken() {
-        Claims claims = jwtUtil.getJWTTokenClaims(httpServletRequest);
-        // typically the subject is the username or email
-        System.out.println(claims.getSubject());
-        return claims.getSubject();
-    }
+        String email = jwtUtil.getEmailFromToken(httpServletRequest);
+        User user = userService.getUserByEmail(email);
+        // Throw error if user is not the current user and also not the admin i.e. user is trying to get the data of another user
+        if (!userId.equals("current") && !userService.isAdminUser(user)) {
+            throw new AccessDeniedException("User does not have required permission");
+        }
 
-    public List<Booking> getAllBooking() {
-        String email = getEmailFromToken();
-        User user = userRepository.findByEmail(email);
-        return bookingRepository.findAllByUserId(user.getId());
+        String finalUserId = userId.equals("current") ? user.getId() : userId;
+        Page<Booking> bookings = bookingRepository.findAllByUserId(finalUserId, pageable);
+        return bookings.map(this::getBookingResponseFromBooking);
     }
 
     public BookingResponse getBookingResponse(Booking booking, String email) {
@@ -165,11 +183,50 @@ public class BookingService {
                 .startTime(booking.getStartTime())
                 .endTime(booking.getEndTime())
                 .createdAt(booking.getCreatedAt())
+                .createdBy(booking.getCreatedBy())
+                .updatedAt(booking.getUpdatedAt())
+                .updatedBy(booking.getUpdatedBy())
                 .totalPrice(booking.getTotalPrice())
                 .paymentId(booking.getPaymentId())
                 .paymentStatus(booking.getPaymentStatus())
                 .paymentReceiptId(booking.getPaymentReceiptId())
                 .bookingStatus(booking.getBookingStatus())
                 .build();
+    }
+
+    public void cancelBooking(String id) {
+        Booking booking = bookingRepository.findById(id).get();
+        booking.setBookingStatus(BookingStatus.CANCELLED);
+        bookingRepository.save(booking);
+    }
+
+    public BookingResponse getBookingById(String id) {
+        Booking booking = bookingRepository.findById(id).get();
+        return getBookingResponseFromBooking(booking);
+    }
+
+    public Page<BookingResponse> getAllBookingsByPlaySpaceId(String playSpaceId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<Booking> bookings = bookingRepository.findAllByPlaySpaceId(playSpaceId, pageable);
+        return bookings.map(this::getBookingResponseFromBooking);
+    }
+
+    public BookingResponse getBookingResponseFromBooking(Booking booking) {
+        BookingResponse bookingResponse = new BookingResponse();
+        BeanUtils.copyProperties(booking, bookingResponse);
+        bookingResponse.setEmail(jwtUtil.getEmailFromToken(httpServletRequest));
+
+        return bookingResponse;
+    }
+
+    public Page<BookingResponse> getAllBookings(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<Booking> bookings = bookingRepository.findAll(pageable);
+        return bookings.map(this::getBookingResponseFromBooking);
+    }
+
+    @Transactional
+    public void deleteBooking(String id) {
+        bookingRepository.deleteById(id);
     }
 }

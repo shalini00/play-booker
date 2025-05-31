@@ -10,6 +10,5 @@ import java.util.Optional;
 
 public interface PlaySpaceRepository extends JpaRepository<PlaySpace, String>, JpaSpecificationExecutor<PlaySpace> {
     Optional<PlaySpace> findByName(String name);
-    Optional<List<PlaySpace>> findBySport(Sport sport);
-
+    Optional<List<PlaySpace>> findBySportsContaining(Sport sport);
 }

@@ -14,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-public class PlaySpace {
+public class PlaySpace extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
@@ -29,9 +29,11 @@ public class PlaySpace {
     @Embedded
     private Address address;
 
-    @Column(nullable = false)
-    @Enumerated(value=EnumType.STRING)
-    private Sport sport;
+    @ElementCollection(targetClass = Sport.class)
+    @Enumerated(EnumType.STRING)
+    @CollectionTable(name = "playspace_sports", joinColumns = @JoinColumn(name = "playspace_id"))
+    @Column(name = "sports")
+    private List<Sport> sports;
 
     @Column(nullable = false)
     private Double pricePerHour;
@@ -47,8 +49,4 @@ public class PlaySpace {
 
     private Double averageRating;
     private Integer numberOfReviews;
-
-    @OneToMany(mappedBy = "playSpace", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<AvailabilitySlot> availabilitySlots;
-
 }

@@ -5,6 +5,7 @@ import com.app.playbooker.models.Address;
 import com.app.playbooker.models.OpeningHours;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -14,15 +15,19 @@ import java.util.List;
 @NoArgsConstructor
 @ToString
 public class PlaySpaceBO {
+    private String id;
     private String name;
     private String description;
     private Address address;
-    private Sport sport;
+    private List<Sport> sports;
     private Double pricePerHour;
     private List<String> amenities;
     private List<String> imageUrls;
     private Double averageRating;
     private Integer numberOfReviews;
     private List<OpeningHours> weeklyOpeningHours;
-    private List<AvailabilitySlotBO> availabilitySlots;
+    private LocalDateTime createdAt;
+    private String createdBy;
+    private LocalDateTime updatedAt;
+    private String updatedBy;
 }

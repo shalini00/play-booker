@@ -21,6 +21,9 @@ public class BookingResponse {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private LocalDateTime createdAt;
+    private String createdBy;
+    private LocalDateTime updatedAt;
+    private String updatedBy;
     private Double totalPrice;
     private PaymentStatus paymentStatus;
     private String paymentId;

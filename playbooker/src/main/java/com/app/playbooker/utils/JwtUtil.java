@@ -94,5 +94,11 @@ public class JwtUtil {
                 .parseClaimsJws(token)
                 .getBody(); // This returns the Claims (payload)
     }
+
+    public String getEmailFromToken(HttpServletRequest request) {
+        Claims claims = getJWTTokenClaims(request);
+        // typically the subject is the username or email
+        return claims.getSubject();
+    }
 }
 

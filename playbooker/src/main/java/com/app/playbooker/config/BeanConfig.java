@@ -1,5 +1,6 @@
 package com.app.playbooker.config;
 
+import com.app.playbooker.filter.JwtAuthenticationFilter;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,5 +25,10 @@ public class BeanConfig {
     @Bean
     public RazorpayClient razorpayClient() throws RazorpayException {
         return new RazorpayClient(razorpayKeyId, razorpayKeySecret);
+    }
+
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter();
     }
 }

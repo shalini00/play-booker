@@ -1,7 +1,9 @@
-package com.app.playbooker.utils;
+package com.app.playbooker.spec;
 
 import com.app.playbooker.dto.PlaySpaceSearchCriteria;
 import com.app.playbooker.entity.PlaySpace;
+import com.app.playbooker.enums.Sport;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -17,8 +19,9 @@ public class PlaySpaceSpecification {
                 predicates.add(cb.like(cb.lower(root.get("name")), "%" + criteria.getName().toLowerCase() + "%"));
             }
 
-            if (criteria.getSport() != null) {
-                predicates.add(cb.equal((root.get("sport")), criteria.getSport()));
+            if (criteria.getSports() != null && !criteria.getSports().isEmpty()) {
+                Join<PlaySpace, Sport> sportsJoin = root.join("sports");
+                predicates.add(sportsJoin.in(criteria.getSports()));
             }
 
             if (criteria.getCity() != null && !criteria.getCity().isEmpty()) {
