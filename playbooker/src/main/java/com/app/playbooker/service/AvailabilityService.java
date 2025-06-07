@@ -4,6 +4,7 @@ import com.app.playbooker.dto.SlotInfoDTO;
 import com.app.playbooker.entity.Booking;
 import com.app.playbooker.entity.PlaySpace;
 import com.app.playbooker.enums.BookingStatus;
+import com.app.playbooker.exceptions.PlaySpaceNotFoundException;
 import com.app.playbooker.models.OpeningHours;
 import com.app.playbooker.repository.BookingRepository;
 import com.app.playbooker.repository.PlaySpaceRepository;
@@ -27,7 +28,7 @@ public class AvailabilityService {
     private BookingRepository bookingRepository;
 
     public List<SlotInfoDTO> getSlotInfo(String playSpaceId, LocalDate date) {
-        PlaySpace playSpace = playSpaceRepository.findById(playSpaceId).get();
+        PlaySpace playSpace = playSpaceRepository.findById(playSpaceId).orElseThrow(() -> new PlaySpaceNotFoundException(playSpaceId));
 
         List<OpeningHours> openingHours = playSpace.getWeeklyOpeningHours();
         DayOfWeek dayOfWeek = date.getDayOfWeek();

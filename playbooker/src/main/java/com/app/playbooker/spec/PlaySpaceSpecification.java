@@ -2,6 +2,7 @@ package com.app.playbooker.spec;
 
 import com.app.playbooker.dto.PlaySpaceSearchCriteria;
 import com.app.playbooker.entity.PlaySpace;
+import com.app.playbooker.enums.PlaySpaceVisibility;
 import com.app.playbooker.enums.Sport;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
@@ -31,6 +32,8 @@ public class PlaySpaceSpecification {
             if (criteria.getAverageRating() != null) {
                 predicates.add(cb.greaterThanOrEqualTo((root.get("averageRating")), criteria.getAverageRating()));
             }
+
+            predicates.add(cb.equal(root.get("playSpaceVisibility"), PlaySpaceVisibility.ACTIVE));
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };

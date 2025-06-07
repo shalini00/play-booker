@@ -3,6 +3,7 @@ package com.app.playbooker.service;
 import com.app.playbooker.dto.ReviewDTO;
 import com.app.playbooker.entity.Review;
 import com.app.playbooker.entity.User;
+import com.app.playbooker.exceptions.ReviewException;
 import com.app.playbooker.repository.ReviewRepository;
 import com.app.playbooker.repository.UserRepository;
 import com.app.playbooker.utils.JwtUtil;
@@ -33,17 +34,21 @@ public class ReviewService {
     private HttpServletRequest request;
 
     public Review createReview(ReviewDTO reviewDTO) {
-        String email = jwtUtil.getEmailFromToken(request);
-        User user = userRepository.findByEmail(email);
+        try {
+            String email = jwtUtil.getEmailFromToken(request);
+            User user = userRepository.findByEmail(email);
 
-        Review review = new Review();
-        BeanUtils.copyProperties(reviewDTO, review);
-        review.setPlaySpaceId(reviewDTO.getPlaySpaceId());
-        review.setUserId(user.getId());
-        review.setCreatedAt(LocalDateTime.now());
-        review = reviewRepository.save(review);
-        playSpaceService.updatePlaySpaceRating(reviewDTO.getPlaySpaceId());
+            Review review = new Review();
+            BeanUtils.copyProperties(reviewDTO, review);
+            review.setPlaySpaceId(reviewDTO.getPlaySpaceId());
+            review.setUserId(user.getId());
+            review.setCreatedAt(LocalDateTime.now());
+            review = reviewRepository.save(review);
+            playSpaceService.updatePlaySpaceRating(reviewDTO.getPlaySpaceId());
 
-        return review;
+            return review;
+        } catch (Exception e) {
+            throw new ReviewException("Error occurred while creating review due to " + e.getMessage());
+        }
     }
 }

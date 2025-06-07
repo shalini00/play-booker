@@ -7,6 +7,9 @@ import com.app.playbooker.dto.PlaySpaceSearchCriteria;
 import com.app.playbooker.dto.UpdatePlaySpaceDTO;
 import com.app.playbooker.entity.PlaySpace;
 import com.app.playbooker.entity.Review;
+import com.app.playbooker.enums.PlaySpaceVisibility;
+import com.app.playbooker.exceptions.PlaySpaceException;
+import com.app.playbooker.exceptions.PlaySpaceNotFoundException;
 import com.app.playbooker.repository.PlaySpaceRepository;
 import com.app.playbooker.repository.ReviewRepository;
 import com.app.playbooker.repository.UserRepository;
@@ -55,16 +58,27 @@ public class PlaySpaceService {
     }
 
     public PlaySpace getPlaySpaceObjectById(String id) {
-        return playSpaceRepository.findById(id).get();
+        return playSpaceRepository.findById(id).orElseThrow(() -> new PlaySpaceNotFoundException(id));
     }
 
     public List<PlaySpaceBO> getAllPlaySpace() {
-        return playSpaceRepository.findAll().stream().map(this::getPlaySpaceBOFromPlayspace).toList();
+        return playSpaceRepository.findAllByPlaySpaceVisibility(PlaySpaceVisibility.ACTIVE)
+                .stream().map(this::getPlaySpaceBOFromPlayspace).toList();
     }
 
     public PlaySpace createPlaySpace(PlaySpaceDTO playSpaceDTO) {
+        String playSpaceName = playSpaceDTO.getName();
+        Double latitude = playSpaceDTO.getAddress().getLatitude();
+        Double longitude = playSpaceDTO.getAddress().getLongitude();
+        Optional<PlaySpace> playSpaceOptional = playSpaceRepository.findByNameAndPlaySpaceVisibilityAndAddress_LatitudeAndAddress_Longitude(playSpaceName, PlaySpaceVisibility.ACTIVE, latitude, longitude);
+        if (playSpaceOptional.isPresent()) {
+            throw new PlaySpaceException("Playspace already present.");
+        }
         PlaySpace playSpace = new PlaySpace();
         BeanUtils.copyProperties(playSpaceDTO, playSpace);
+        if (playSpace.getPlaySpaceVisibility() == null) {
+            playSpace.setPlaySpaceVisibility(PlaySpaceVisibility.ACTIVE);
+        }
         return playSpaceRepository.save(playSpace);
     }
 
@@ -78,7 +92,7 @@ public class PlaySpaceService {
     }
 
     public PlaySpace updatePlaySpace(String playSpaceId, UpdatePlaySpaceDTO updatePlaySpaceDTO) {
-        PlaySpace playSpace = playSpaceRepository.findById(playSpaceId).get();
+        PlaySpace playSpace = playSpaceRepository.findById(playSpaceId).orElseThrow(() -> new PlaySpaceNotFoundException(playSpaceId));
         if (updatePlaySpaceDTO.getName() != null) playSpace.setName(updatePlaySpaceDTO.getName());
         if (updatePlaySpaceDTO.getDescription() != null) playSpace.setDescription(updatePlaySpaceDTO.getDescription());
         if (updatePlaySpaceDTO.getSports() != null) playSpace.setSports(updatePlaySpaceDTO.getSports());
@@ -104,7 +118,7 @@ public class PlaySpaceService {
     }
 
     public void updatePlaySpaceRating(String playSpaceId) {
-        PlaySpace playSpace = playSpaceRepository.findById(playSpaceId).get();
+        PlaySpace playSpace = playSpaceRepository.findById(playSpaceId).orElseThrow(() -> new PlaySpaceNotFoundException(playSpaceId));
         List<Review> reviews = reviewRepository.findByPlaySpaceId(playSpaceId);
 
         if (reviews.isEmpty()) {
@@ -124,7 +138,7 @@ public class PlaySpaceService {
     }
 
     public PlaySpace updateFullPlaySpace(String playSpaceId, PlaySpaceDTO updatedPlaySpaceDTO) {
-        PlaySpace existingPlaySpace = playSpaceRepository.findById(playSpaceId).get();
+        PlaySpace existingPlaySpace = playSpaceRepository.findById(playSpaceId).orElseThrow(() -> new PlaySpaceNotFoundException(playSpaceId));
         PlaySpace updatedPlaySpace = new PlaySpace();
         BeanUtils.copyProperties(updatedPlaySpaceDTO, updatedPlaySpace);
         updatedPlaySpace.setId(existingPlaySpace.getId());
@@ -145,5 +159,20 @@ public class PlaySpaceService {
     public void deletePlaySpace(String playSpaceId) {
         playSpaceRepository.deleteById(playSpaceId);
     }
+
+    public void togglePlaySpaceVisibility(String id) {
+        PlaySpace playSpace = playSpaceRepository.findById(id).orElseThrow(() -> new PlaySpaceNotFoundException(id));
+        if (playSpace.getPlaySpaceVisibility().equals(PlaySpaceVisibility.ACTIVE)) {
+            playSpace.setPlaySpaceVisibility(PlaySpaceVisibility.INACTIVE);
+        } else {
+            playSpace.setPlaySpaceVisibility(PlaySpaceVisibility.ACTIVE);
+        }
+        playSpaceRepository.save(playSpace);
+    }
+
+    public long getActivePlaySpaceCount() {
+        return playSpaceRepository.countByPlaySpaceVisibility(PlaySpaceVisibility.ACTIVE); // assuming a flag
+    }
+
 }
 

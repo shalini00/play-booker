@@ -9,9 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,7 +16,7 @@ import java.util.List;
 @Configuration
 @EnableScheduling
 @Log4j2
-public class UpdatePaymentJobStatus {
+public class UpdateBookingJob {
 
     @Autowired
     BookingRepository bookingRepository;

@@ -1,5 +1,6 @@
 package com.app.playbooker.dto;
 
+import com.app.playbooker.enums.PlaySpaceVisibility;
 import com.app.playbooker.enums.Sport;
 import lombok.*;
 import org.springframework.data.domain.Sort;
@@ -19,4 +20,5 @@ public class PlaySpaceSearchCriteria {
     private String city;
     private Double averageRating;
     private Sort sortOrders;
+    private PlaySpaceVisibility playSpaceVisibility;
 }

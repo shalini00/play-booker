@@ -6,6 +6,7 @@ import com.app.playbooker.entity.PlaySpace;
 import com.app.playbooker.repository.PlaySpaceRepository;
 import com.app.playbooker.service.PlaySpaceService;
 import com.app.playbooker.utils.PlaySpaceUtility;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -43,7 +44,7 @@ public class PlaySpaceController {
 
     @Secured({ROLE_ADMIN})
     @PostMapping("/create")
-    public ResponseEntity<PlaySpace> createPlaySpace(@RequestBody PlaySpaceDTO playSpaceDTO) {
+    public ResponseEntity<PlaySpace> createPlaySpace(@Valid @RequestBody PlaySpaceDTO playSpaceDTO) {
         return new ResponseEntity<>(playSpaceService.createPlaySpace(playSpaceDTO), HttpStatus.CREATED);
     }
 

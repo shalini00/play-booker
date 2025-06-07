@@ -8,20 +8,27 @@ import AuthLayout from './components/AuthLayout';
 import PublicOnly from './components/PublicOnly';
 import BookingForm from './components/BookingForm';
 import PaymentSucess from './components/PaymentSucess';
+import SignupForm from './components/SignupForm';
 
 function App() {
   return (
     <Router>
       <Routes>
-      <Route path="/" element={< Dashboard/>} />
+        <Route path="/" element={< Dashboard />} />
         <Route path="/login" element={
           <PublicOnly>
             <Login />
           </PublicOnly>
-          } />
-       
+        } />
+
+        <Route path="/signup" element={
+          <PublicOnly>
+            <SignupForm />
+          </PublicOnly>
+        } />
+
         <Route path="/oauthcallback" element={<OAuthCallback />} />
-        
+
         <Route element={<AuthLayout />}>
           <Route path="/home" element={<BookingForm />} />
           <Route path='/payment-success' element={<PaymentSucess />} />

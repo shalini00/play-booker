@@ -1,9 +1,12 @@
 package com.app.playbooker.entity;
 
+import com.app.playbooker.enums.PlaySpaceVisibility;
 import com.app.playbooker.enums.Sport;
 import com.app.playbooker.models.Address;
 import com.app.playbooker.models.OpeningHours;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import java.util.List;
 
@@ -19,10 +22,12 @@ public class PlaySpace extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
+    @NotBlank(message = "PlaySpace name is mandatory")
     private String name;
 
     @Column(nullable = false)
+    @NotBlank(message = "Description is mandatory")
     private String description;
 
     @Column(nullable = false)
@@ -36,6 +41,7 @@ public class PlaySpace extends BaseEntity {
     private List<Sport> sports;
 
     @Column(nullable = false)
+    @NotNull(message = "Price per hour is mandatory")
     private Double pricePerHour;
 
     @ElementCollection
@@ -49,4 +55,7 @@ public class PlaySpace extends BaseEntity {
 
     private Double averageRating;
     private Integer numberOfReviews;
+
+    @Enumerated(EnumType.STRING)
+    private PlaySpaceVisibility playSpaceVisibility;
 }

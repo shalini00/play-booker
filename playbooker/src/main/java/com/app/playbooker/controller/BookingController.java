@@ -5,6 +5,7 @@ import com.app.playbooker.dto.BookingResponse;
 import com.app.playbooker.dto.PaginationData;
 import com.app.playbooker.dto.ResultPageData;
 import com.app.playbooker.service.BookingService;
+import jakarta.validation.Valid;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -30,7 +31,7 @@ public class BookingController {
 
     @Secured({ROLE_ADMIN, ROLE_USER})
     @PostMapping("/create")
-    public ResponseEntity<BookingResponse> bookPlaySpace(@RequestBody BookingDTO bookingDTO) {
+    public ResponseEntity<BookingResponse> bookPlaySpace(@Valid @RequestBody BookingDTO bookingDTO) {
         return new ResponseEntity<>(bookingService.createBooking(bookingDTO), HttpStatusCode.valueOf(201));
     }
 
@@ -59,7 +60,7 @@ public class BookingController {
     @Secured({ROLE_ADMIN, ROLE_USER})
     @GetMapping("/get/{id}")
     public ResponseEntity<BookingResponse> getBookingById(@PathVariable String id) {
-        return ResponseEntity.ok(bookingService.getBookingById(id));
+        return ResponseEntity.ok(bookingService.getBookingResponseById(id));
     }
 
     @Secured({ROLE_ADMIN})
@@ -110,7 +111,6 @@ public class BookingController {
     @Secured({ROLE_ADMIN, ROLE_USER})
     @PostMapping("/payment-callback")
     public ResponseEntity<Void> paymentCallback(@RequestParam Map<String, Object> callbackRequest) {
-        log.info("####### Started controller method ###########");
         bookingService.updateBookingForCallback(callbackRequest);
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create("http://localhost:3000/payment-success"))

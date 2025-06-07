@@ -1,5 +1,6 @@
 package com.app.playbooker.bo;
 
+import com.app.playbooker.enums.PlaySpaceVisibility;
 import com.app.playbooker.enums.Sport;
 import com.app.playbooker.models.Address;
 import com.app.playbooker.models.OpeningHours;
@@ -30,4 +31,5 @@ public class PlaySpaceBO {
     private String createdBy;
     private LocalDateTime updatedAt;
     private String updatedBy;
+    private PlaySpaceVisibility playSpaceVisibility;
 }

@@ -4,6 +4,7 @@ import com.app.playbooker.dto.ReviewDTO;
 import com.app.playbooker.entity.Review;
 import com.app.playbooker.service.PlaySpaceService;
 import com.app.playbooker.service.ReviewService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
@@ -21,7 +22,7 @@ public class ReviewController {
 
     @Secured({ROLE_ADMIN, ROLE_USER})
     @PostMapping("/create")
-    public ResponseEntity<Review> createReview(@RequestBody ReviewDTO reviewDTO) {
+    public ResponseEntity<Review> createReview(@Valid @RequestBody ReviewDTO reviewDTO) {
         return ResponseEntity.ok(reviewService.createReview(reviewDTO));
     }
 }
